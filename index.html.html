@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard Componentes Aeronáuticos MI-17 PNP-503</title>
+<style>
+  :root {
+    --bg: #07111f;
+    --panel: rgba(255,255,255,0.085);
+    --panel2: rgba(255,255,255,0.13);
+    --txt: #edf5ff;
+    --muted: #a9bbd2;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --cyan: #38bdf8;
+    --blue: #60a5fa;
+    --border: rgba(255,255,255,0.16);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; font-family: Inter, Segoe UI, Arial, sans-serif; color:var(--txt);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(56,189,248,0.22), transparent 32%),
+      radial-gradient(circle at 90% 10%, rgba(34,197,94,0.12), transparent 35%),
+      linear-gradient(135deg, #07111f 0%, #111827 55%, #0f172a 100%);
+    min-height:100vh;
+  }
+  .wrap { max-width: 1320px; margin:0 auto; padding:24px; }
+  .hero {
+    display:flex; justify-content:space-between; gap:18px; align-items:flex-start;
+    padding:22px; border:1px solid var(--border); border-radius:24px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.04));
+    box-shadow: 0 20px 70px rgba(0,0,0,0.25);
+  }
+  h1 { margin:0 0 6px 0; font-size: clamp(24px, 4vw, 40px); letter-spacing:.2px; }
+  .subtitle { color:var(--muted); font-size:15px; line-height:1.5; }
+  .badge {
+    display:inline-flex; align-items:center; gap:8px; white-space:nowrap; padding:10px 13px;
+    border-radius:999px; background: rgba(34,197,94,.13); border:1px solid rgba(34,197,94,.35); color:#bbf7d0;
+    font-weight:700; font-size:13px;
+  }
+  .controls { display:flex; flex-wrap:wrap; gap:10px; margin:18px 0; align-items:center; }
+  button, select {
+    border:1px solid var(--border); background:var(--panel); color:var(--txt);
+    padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:700;
+  }
+  button.active { background: rgba(56,189,248,.22); border-color: rgba(56,189,248,.6); }
+  button:hover, select:hover { background:var(--panel2); }
+  .grid { display:grid; gap:16px; }
+  .kpis { grid-template-columns: repeat(4, minmax(0,1fr)); margin-bottom:16px; }
+  .cards { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .charts { grid-template-columns: 1.2fr .8fr; margin:16px 0; }
+  .panel {
+    background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:18px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.20); backdrop-filter: blur(10px);
+  }
+  .kpi .label { color:var(--muted); font-size:13px; }
+  .kpi .value { font-size:28px; font-weight:900; margin-top:4px; }
+  .kpi .hint { color:var(--muted); margin-top:6px; font-size:12px; }
+  .component-card {
+    position:relative; overflow:hidden;
+  }
+  .component-card:before {
+    content:""; position:absolute; inset:0 0 auto 0; height:4px; background:var(--green);
+  }
+  .component-card.warn:before { background: var(--yellow); }
+  .component-card.crit:before { background: var(--red); }
+  .card-title { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:12px; }
+  .card-title h3 { margin:0; font-size:20px; }
+  .pill { padding:7px 10px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid var(--border); }
+  .pill.ok { background:rgba(34,197,94,.18); color:#bbf7d0; border-color:rgba(34,197,94,.35); }
+  .pill.warn { background:rgba(245,158,11,.18); color:#fde68a; border-color:rgba(245,158,11,.35); }
+  .pill.crit { background:rgba(239,68,68,.18); color:#fecaca; border-color:rgba(239,68,68,.35); }
+  .meta { display:grid; grid-template-columns: 1fr 1fr; gap:9px; color:#d7e3f6; font-size:13px; }
+  .meta div { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
+  .meta span { display:block; color:var(--muted); font-size:11px; margin-bottom:4px; }
+  .bar { height:12px; background:rgba(255,255,255,.10); border-radius:999px; overflow:hidden; margin:10px 0 6px; }
+  .bar > i { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--cyan),var(--green)); width:0; transition:width .5s ease; }
+  .small { color:var(--muted); font-size:12px; }
+  canvas { width:100%; max-height:340px; }
+  table { width:100%; border-collapse:collapse; overflow:hidden; border-radius:14px; }
+  th, td { padding:11px 10px; border-bottom:1px solid rgba(255,255,255,.09); text-align:left; font-size:13px; }
+  th { color:#cfe6ff; background:rgba(56,189,248,.13); position:sticky; top:0; }
+  tr:hover td { background:rgba(255,255,255,.05); }
+  .alert { border-left:4px solid var(--yellow); background:rgba(245,158,11,.12); padding:12px; border-radius:12px; color:#fff7d6; }
+  .footer { color:var(--muted); font-size:12px; margin-top:16px; text-align:center; }
+  @media (max-width:1000px) { .kpis, .cards, .charts { grid-template-columns: 1fr; } .hero { flex-direction:column; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <h1>Dashboard interactivo de componentes aeronáuticos</h1>
+      <div class="subtitle">MI-17 PNP-503 · Motor 1, Motor 2, Reductor Principal y AI-9B · Control de recurso, TSO, calendario y condición de Overhaul.</div>
+    </div>
+    <div class="badge">🟢 Actualizado: 24/06/2026</div>
+  </section>
+
+  <div class="controls">
+    <button class="filter active" data-mode="principales">Motor 1 + Motor 2 + Reductor</button>
+    <button class="filter" data-mode="todos">Incluir AI-9B</button>
+    <select id="sort">
+      <option value="recurso">Ordenar por menor recurso restante</option>
+      <option value="disponible">Ordenar por % disponible</option>
+      <option value="vencimiento">Ordenar por vencimiento calendario</option>
+      <option value="estado">Ordenar por estado</option>
+    </select>
+    <button id="exportCsv">Exportar CSV</button>
+  </div>
+
+  <section class="grid kpis" id="kpis"></section>
+
+  <section class="grid cards" id="cards"></section>
+
+  <section class="grid charts">
+    <div class="panel">
+      <h2 style="margin-top:0">Recurso restante vs TSO actual</h2>
+      <canvas id="barChart" width="900" height="360"></canvas>
+      <div class="small">Escala en horas. Para AI-9B, el recurso por arranques se muestra como alerta cuando está incluido.</div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Disponibilidad promedio</h2>
+      <canvas id="donutChart" width="520" height="360"></canvas>
+      <div id="donutText" class="small"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-top:0">Tabla técnica resumida</h2>
+    <div style="overflow:auto; max-height:430px;">
+      <table id="dataTable"></table>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:16px;">
+    <h2 style="margin-top:0">Alertas y lectura rápida</h2>
+    <div id="alerts"></div>
+  </section>
+
+  <div class="footer">Fuente: archivo Excel subido · Campos usados: BASE_DASHBOARD · Terminología: Overhaul y tiempo de servicio.</div>
+</div>
+
+<script>
+const DATA = [{"Componente": "Motor 1", "Modelo": "Motor TV3-117BM", "N° Serie": "7087882300209", "Taller": "JSC BORYSFEN", "Último Overhaul": 45205, "TSO actual (h)": 438.8, "Recurso asignado": 1500, "Recurso restante": 1061.2, "% Disponible": 0.7074666667, "Tiempo de servicio": "10 años", "Vencimiento": 48858, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "06/10/2023", "Vencimiento Fecha": "06/10/2033", "DisponiblePct": 70.7, "ConsumidoPct": 29.3, "Criticidad": "Normal", "Días restantes calendario": 2661}, {"Componente": "Motor 2", "Modelo": "Motor TV3-117BM", "N° Serie": "7087882200437", "Taller": "JSC BORYSFEN", "Último Overhaul": 45205, "TSO actual (h)": 438.8, "Recurso asignado": 1500, "Recurso restante": 1061.2, "% Disponible": 0.7074666667, "Tiempo de servicio": "10 años", "Vencimiento": 48858, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "06/10/2023", "Vencimiento Fecha": "06/10/2033", "DisponiblePct": 70.7, "ConsumidoPct": 29.3, "Criticidad": "Normal", "Días restantes calendario": 2661}, {"Componente": "Reductor Principal", "Modelo": "Reductor VR-14", "N° Serie": "25504360M", "Taller": "CMR S.A.S.", "Último Overhaul": 45163, "TSO actual (h)": 436.99, "Recurso asignado": 1500, "Recurso restante": 1063.01, "% Disponible": 0.7086733333, "Tiempo de servicio": "10 años", "Vencimiento": 48816, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "25/08/2023", "Vencimiento Fecha": "25/08/2033", "DisponiblePct": 70.9, "ConsumidoPct": 29.1, "Criticidad": "Normal", "Días restantes calendario": 2619}, {"Componente": "AI-9B", "Modelo": "Motor de Arranque AI-9B", "N° Serie": "7080924200355", "Taller": "OOO ARP Motor", "Último Overhaul": 44028, "TSO actual (h)": 62.8333, "Recurso asignado": 100, "Recurso restante": -94, "% Disponible": 0, "Tiempo de servicio": "8 años", "Vencimiento": 46950, "Requiere Overhaul": "SI", "Estado": "OVERHAUL REQUERIDO", "Arranques TSO": 694, "Recurso arranques": 600, "Exceso arranques": 94, "Último Overhaul Fecha": "16/07/2020", "Vencimiento Fecha": "16/07/2028", "DisponiblePct": 0, "ConsumidoPct": 100, "Criticidad": "Crítico", "Días restantes calendario": 753}];
+const principales = new Set(["Motor 1","Motor 2","Reductor Principal"]);
+let mode = "principales";
+
+function fmt(n, dec=1) {
+  if (n === null || n === undefined || n === "") return "—";
+  if (typeof n === "number") return n.toLocaleString("es-PE", {maximumFractionDigits: dec, minimumFractionDigits: dec});
+  return n;
+}
+function statusClass(d) {
+  if (d.Criticidad === "Crítico") return "crit";
+  if (d.Criticidad === "Precaución") return "warn";
+  return "ok";
+}
+function filtered() {
+  let arr = DATA.filter(d => mode === "todos" || principales.has(d.Componente));
+  const sort = document.getElementById("sort").value;
+  arr = [...arr].sort((a,b) => {
+    if (sort === "recurso") return (a["Recurso restante"] ?? 999999) - (b["Recurso restante"] ?? 999999);
+    if (sort === "disponible") return (a.DisponiblePct ?? 0) - (b.DisponiblePct ?? 0);
+    if (sort === "vencimiento") return (a["Días restantes calendario"] ?? 999999) - (b["Días restantes calendario"] ?? 999999);
+    if (sort === "estado") return String(a.Estado).localeCompare(String(b.Estado));
+    return 0;
+  });
+  return arr;
+}
+function renderKpis(arr) {
+  const total = arr.length;
+  const operativos = arr.filter(d => d.Estado === "OPERATIVO").length;
+  const overhaul = arr.filter(d => String(d["Requiere Overhaul"]).toUpperCase() === "SI").length;
+  const avgDisp = arr.reduce((s,d)=>s+(d.DisponiblePct||0),0)/Math.max(1,arr.length);
+  const min = [...arr].sort((a,b)=>(a["Recurso restante"]??999999)-(b["Recurso restante"]??999999))[0];
+  const kpis = [
+    ["Componentes", total, "Elementos mostrados"],
+    ["Operativos", operativos, `${Math.round(operativos/total*100)}% de la selección`],
+    ["Requieren Overhaul", overhaul, overhaul ? "Revisar alerta" : "Sin requerimiento"],
+    ["Menor recurso", `${fmt(min["Recurso restante"],1)} h`, min.Componente]
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(k=>`<div class="panel kpi"><div class="label">${k[0]}</div><div class="value">${k[1]}</div><div class="hint">${k[2]}</div></div>`).join("");
+}
+function renderCards(arr) {
+  document.getElementById("cards").innerHTML = arr.map(d => `
+    <article class="panel component-card ${statusClass(d)}">
+      <div class="card-title">
+        <h3>${d.Componente}</h3>
+        <span class="pill ${statusClass(d)}">${d.Estado}</span>
+      </div>
+      <div class="bar"><i style="width:${Math.max(0, Math.min(100, d.DisponiblePct))}%"></i></div>
+      <div class="small">${fmt(d.DisponiblePct,1)}% disponible · ${fmt(d.ConsumidoPct,1)}% consumido</div>
+      <div class="meta" style="margin-top:12px">
+        <div><span>Modelo</span>${d.Modelo}</div>
+        <div><span>N° Serie</span>${d["N° Serie"]}</div>
+        <div><span>TSO actual</span>${fmt(d["TSO actual (h)"],2)} h</div>
+        <div><span>Recurso restante</span>${fmt(d["Recurso restante"],2)} h</div>
+        <div><span>Último Overhaul</span>${d["Último Overhaul Fecha"]}</div>
+        <div><span>Vencimiento</span>${d["Vencimiento Fecha"]}</div>
+        <div><span>Taller</span>${d.Taller}</div>
+        <div><span>Tiempo de servicio</span>${d["Tiempo de servicio"]}</div>
+      </div>
+    </article>`).join("");
+}
+function drawBar(arr) {
+  const c = document.getElementById("barChart"), ctx = c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  const pad = 55, w = c.width - pad*2, h = c.height - 80;
+  const max = Math.max(...arr.map(d=>Math.max(d["TSO actual (h)"]||0, d["Recurso restante"]||0)), 1500);
+  ctx.font = "14px Segoe UI"; ctx.fillStyle = "#a9bbd2";
+  ctx.fillText("Horas", 18, 24);
+  arr.forEach((d,i)=>{
+    const y = 55 + i*(h/arr.length) + 14;
+    const label = d.Componente.replace("Reductor Principal","Reductor");
+    ctx.fillStyle = "#edf5ff"; ctx.fillText(label, 12, y+10);
+    const x0 = 160, bw = w-110;
+    ctx.fillStyle = "rgba(255,255,255,.10)"; ctx.fillRect(x0, y-4, bw, 14);
+    ctx.fillStyle = "#38bdf8"; ctx.fillRect(x0, y-4, bw*((d["TSO actual (h)"]||0)/max), 14);
+    ctx.fillStyle = "rgba(255,255,255,.10)"; ctx.fillRect(x0, y+18, bw, 14);
+    ctx.fillStyle = statusClass(d)==="crit" ? "#ef4444" : "#22c55e";
+    ctx.fillRect(x0, y+18, bw*(Math.max(0,d["Recurso restante"]||0)/max), 14);
+    ctx.fillStyle = "#cfe6ff"; ctx.fillText(`TSO ${fmt(d["TSO actual (h)"],1)} h`, x0+bw+10, y+8);
+    ctx.fillText(`Rest. ${fmt(d["Recurso restante"],1)} h`, x0+bw+10, y+30);
+  });
+  ctx.fillStyle = "#38bdf8"; ctx.fillRect(20, c.height-32, 12, 12); ctx.fillStyle="#a9bbd2"; ctx.fillText("TSO actual", 38, c.height-21);
+  ctx.fillStyle = "#22c55e"; ctx.fillRect(135, c.height-32, 12, 12); ctx.fillStyle="#a9bbd2"; ctx.fillText("Recurso restante", 153, c.height-21);
+}
+function drawDonut(arr) {
+  const c = document.getElementById("donutChart"), ctx = c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  const avg = arr.reduce((s,d)=>s+(d.DisponiblePct||0),0)/Math.max(1,arr.length);
+  const cx=c.width/2, cy=160, r=105;
+  ctx.lineWidth=34;
+  ctx.strokeStyle="rgba(255,255,255,.10)";
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle= avg>30 ? "#22c55e" : (avg>10 ? "#f59e0b" : "#ef4444");
+  ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2, -Math.PI/2 + Math.PI*2*(avg/100)); ctx.stroke();
+  ctx.fillStyle="#edf5ff"; ctx.font="bold 42px Segoe UI"; ctx.textAlign="center"; ctx.fillText(`${fmt(avg,1)}%`,cx,cy+10);
+  ctx.font="14px Segoe UI"; ctx.fillStyle="#a9bbd2"; ctx.fillText("promedio disponible",cx,cy+36);
+  document.getElementById("donutText").textContent = `Promedio calculado sobre ${arr.length} componente(s) visibles.`;
+}
+function renderTable(arr) {
+  const cols = ["Componente","Modelo","N° Serie","Taller","Último Overhaul Fecha","TSO actual (h)","Recurso asignado","Recurso restante","DisponiblePct","Tiempo de servicio","Vencimiento Fecha","Estado"];
+  document.getElementById("dataTable").innerHTML = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>` +
+    arr.map(d=>`<tr>${cols.map(c=>`<td>${c==="DisponiblePct" ? fmt(d[c],1)+"%" : (typeof d[c]==="number" ? fmt(d[c],2) : (d[c] ?? "—"))}</td>`).join("")}</tr>`).join("") + "</tbody>";
+}
+function renderAlerts(arr) {
+  const alerts = [];
+  arr.forEach(d => {
+    if (String(d["Requiere Overhaul"]).toUpperCase() === "SI") alerts.push(`🔴 <b>${d.Componente}</b>: requiere Overhaul. Estado: ${d.Estado}.`);
+    if ((d.DisponiblePct||0) <= 30 && String(d["Requiere Overhaul"]).toUpperCase() !== "SI") alerts.push(`🟡 <b>${d.Componente}</b>: disponibilidad baja (${fmt(d.DisponiblePct,1)}%).`);
+    if (d["Arranques TSO"] && d["Recurso arranques"] && d["Arranques TSO"] > d["Recurso arranques"]) alerts.push(`🔴 <b>${d.Componente}</b>: excede arranques (${d["Arranques TSO"]} de ${d["Recurso arranques"]}; exceso ${d["Exceso arranques"]}).`);
+  });
+  if (!alerts.length) alerts.push("🟢 Motor 1, Motor 2 y Reductor Principal se muestran operativos, con recurso disponible mayor al 70%.");
+  document.getElementById("alerts").innerHTML = alerts.map(a=>`<div class="alert" style="margin:8px 0">${a}</div>`).join("");
+}
+function render() {
+  const arr = filtered();
+  renderKpis(arr); renderCards(arr); drawBar(arr); drawDonut(arr); renderTable(arr); renderAlerts(arr);
+}
+document.querySelectorAll(".filter").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); mode = btn.dataset.mode; render();
+  });
+});
+document.getElementById("sort").addEventListener("change", render);
+document.getElementById("exportCsv").addEventListener("click", () => {
+  const arr = filtered();
+  const cols = Object.keys(arr[0]);
+  const csv = [cols.join(","), ...arr.map(r => cols.map(c => `"${String(r[c] ?? "").replaceAll('"','""')}"`).join(","))].join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download="componentes_mi17_dashboard.csv"; a.click();
+  URL.revokeObjectURL(url);
+});
+render();
+</script>
+</body>
+</html>
