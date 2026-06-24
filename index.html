@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dashboard Componentes Aeronáuticos MI-17 PNP-503</title>
+<title>Dashboard Editable Componentes Aeronáuticos MI-17 PNP-503</title>
 <style>
   :root {
     --bg: #07111f;
@@ -17,6 +17,7 @@
     --cyan: #38bdf8;
     --blue: #60a5fa;
     --border: rgba(255,255,255,0.16);
+    --input: rgba(6, 17, 33, .62);
   }
   * { box-sizing: border-box; }
   body {
@@ -35,6 +36,7 @@
     box-shadow: 0 20px 70px rgba(0,0,0,0.25);
   }
   h1 { margin:0 0 6px 0; font-size: clamp(24px, 4vw, 40px); letter-spacing:.2px; }
+  h2 { font-size: clamp(19px, 3vw, 26px); }
   .subtitle { color:var(--muted); font-size:15px; line-height:1.5; }
   .badge {
     display:inline-flex; align-items:center; gap:8px; white-space:nowrap; padding:10px 13px;
@@ -48,6 +50,9 @@
   }
   button.active { background: rgba(56,189,248,.22); border-color: rgba(56,189,248,.6); }
   button:hover, select:hover { background:var(--panel2); }
+  .saveBtn { background:rgba(34,197,94,.18); border-color:rgba(34,197,94,.45); }
+  .resetBtn { background:rgba(239,68,68,.14); border-color:rgba(239,68,68,.35); }
+  .hint-edit { width:100%; color:#cfe6ff; font-size:13px; padding:10px 12px; border-radius:14px; background:rgba(56,189,248,.10); border:1px dashed rgba(56,189,248,.35); }
   .grid { display:grid; gap:16px; }
   .kpis { grid-template-columns: repeat(4, minmax(0,1fr)); margin-bottom:16px; }
   .cards { grid-template-columns: repeat(3, minmax(0,1fr)); }
@@ -59,12 +64,8 @@
   .kpi .label { color:var(--muted); font-size:13px; }
   .kpi .value { font-size:28px; font-weight:900; margin-top:4px; }
   .kpi .hint { color:var(--muted); margin-top:6px; font-size:12px; }
-  .component-card {
-    position:relative; overflow:hidden;
-  }
-  .component-card:before {
-    content:""; position:absolute; inset:0 0 auto 0; height:4px; background:var(--green);
-  }
+  .component-card { position:relative; overflow:hidden; }
+  .component-card:before { content:""; position:absolute; inset:0 0 auto 0; height:4px; background:var(--green); }
   .component-card.warn:before { background: var(--yellow); }
   .component-card.crit:before { background: var(--red); }
   .card-title { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:12px; }
@@ -74,27 +75,58 @@
   .pill.warn { background:rgba(245,158,11,.18); color:#fde68a; border-color:rgba(245,158,11,.35); }
   .pill.crit { background:rgba(239,68,68,.18); color:#fecaca; border-color:rgba(239,68,68,.35); }
   .meta { display:grid; grid-template-columns: 1fr 1fr; gap:9px; color:#d7e3f6; font-size:13px; }
-  .meta div { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
-  .meta span { display:block; color:var(--muted); font-size:11px; margin-bottom:4px; }
+  .field { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
+  .field label { display:block; color:var(--muted); font-size:11px; margin-bottom:6px; }
+  .edit-input {
+    width:100%; min-width:0; padding:9px 10px; border-radius:10px;
+    border:1px solid rgba(96,165,250,.35); background:var(--input); color:var(--txt);
+    outline:none; font-weight:700; font-size:13px;
+  }
+  .edit-input:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(56,189,248,.16); }
   .bar { height:12px; background:rgba(255,255,255,.10); border-radius:999px; overflow:hidden; margin:10px 0 6px; }
   .bar > i { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--cyan),var(--green)); width:0; transition:width .5s ease; }
   .small { color:var(--muted); font-size:12px; }
   canvas { width:100%; max-height:340px; }
-  table { width:100%; border-collapse:collapse; overflow:hidden; border-radius:14px; }
-  th, td { padding:11px 10px; border-bottom:1px solid rgba(255,255,255,.09); text-align:left; font-size:13px; }
-  th { color:#cfe6ff; background:rgba(56,189,248,.13); position:sticky; top:0; }
+  .table-wrap { overflow:auto; max-height:520px; border-radius:14px; }
+  table { width:100%; border-collapse:collapse; min-width:1050px; }
+  th, td { padding:10px; border-bottom:1px solid rgba(255,255,255,.09); text-align:left; font-size:13px; vertical-align:top; }
+  th { color:#cfe6ff; background:rgba(56,189,248,.13); position:sticky; top:0; z-index:1; }
   tr:hover td { background:rgba(255,255,255,.05); }
+  td .edit-input { min-width:128px; }
   .alert { border-left:4px solid var(--yellow); background:rgba(245,158,11,.12); padding:12px; border-radius:12px; color:#fff7d6; }
   .footer { color:var(--muted); font-size:12px; margin-top:16px; text-align:center; }
-  @media (max-width:1000px) { .kpis, .cards, .charts { grid-template-columns: 1fr; } .hero { flex-direction:column; } }
+  @media (max-width:1000px) {
+    .kpis, .cards, .charts { grid-template-columns: 1fr; }
+    .hero { flex-direction:column; }
+  }
+  @media (max-width:640px) {
+    .wrap { padding:12px; }
+    .hero { padding:16px; border-radius:18px; }
+    .controls { display:grid; grid-template-columns:1fr; }
+    .controls button, .controls select { width:100%; min-height:44px; }
+    .badge { white-space:normal; }
+    .panel { padding:14px; border-radius:16px; }
+    .meta { grid-template-columns: 1fr; }
+    .card-title { flex-direction:column; align-items:flex-start; }
+    .kpi .value { font-size:24px; }
+    canvas { max-height:280px; }
+    .table-wrap { overflow:visible; max-height:none; }
+    table, thead, tbody, th, td, tr { display:block; min-width:0; width:100%; }
+    thead { display:none; }
+    tbody tr { margin:0 0 14px; padding:12px; border-radius:16px; border:1px solid var(--border); background:rgba(255,255,255,.055); }
+    td { display:grid; grid-template-columns: 42% 58%; gap:8px; align-items:center; border-bottom:1px solid rgba(255,255,255,.07); padding:10px 0; }
+    td:last-child { border-bottom:none; }
+    td::before { content:attr(data-label); color:var(--muted); font-size:12px; font-weight:800; }
+    td .edit-input { min-width:0; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <section class="hero">
     <div>
-      <h1>Dashboard interactivo de componentes aeronáuticos</h1>
-      <div class="subtitle">MI-17 PNP-503 · Motor 1, Motor 2, Reductor Principal y AI-9B · Control de recurso, TSO, calendario y condición de Overhaul.</div>
+      <h1>Dashboard editable de componentes aeronáuticos</h1>
+      <div class="subtitle">MI-17 PNP-503 · Motor 1, Motor 2, Reductor Principal y AI-9B · Edición directa de modelo, serie, TSO, recurso, Overhaul, vencimiento, taller y tiempo de servicio.</div>
     </div>
     <div class="badge">🟢 Actualizado: 24/06/2026</div>
   </section>
@@ -108,18 +140,20 @@
       <option value="vencimiento">Ordenar por vencimiento calendario</option>
       <option value="estado">Ordenar por estado</option>
     </select>
+    <button class="saveBtn" id="saveData">Guardar cambios</button>
+    <button class="resetBtn" id="resetData">Restaurar datos</button>
     <button id="exportCsv">Exportar CSV</button>
+    <div class="hint-edit">✍️ Los campos técnicos son editables. Al modificar TSO o recurso restante, el dashboard actualiza KPIs, gráficos y alertas.</div>
   </div>
 
   <section class="grid kpis" id="kpis"></section>
-
   <section class="grid cards" id="cards"></section>
 
   <section class="grid charts">
     <div class="panel">
       <h2 style="margin-top:0">Recurso restante vs TSO actual</h2>
       <canvas id="barChart" width="900" height="360"></canvas>
-      <div class="small">Escala en horas. Para AI-9B, el recurso por arranques se muestra como alerta cuando está incluido.</div>
+      <div class="small">Escala en horas. En celular puedes editar desde las tarjetas o desde la tabla inferior.</div>
     </div>
     <div class="panel">
       <h2 style="margin-top:0">Disponibilidad promedio</h2>
@@ -129,10 +163,8 @@
   </section>
 
   <section class="panel">
-    <h2 style="margin-top:0">Tabla técnica resumida</h2>
-    <div style="overflow:auto; max-height:430px;">
-      <table id="dataTable"></table>
-    </div>
+    <h2 style="margin-top:0">Tabla técnica editable</h2>
+    <div class="table-wrap"><table id="dataTable"></table></div>
   </section>
 
   <section class="panel" style="margin-top:16px;">
@@ -140,44 +172,85 @@
     <div id="alerts"></div>
   </section>
 
-  <div class="footer">Fuente: archivo Excel subido · Campos usados: BASE_DASHBOARD · Terminología: Overhaul y tiempo de servicio.</div>
+  <div class="footer">Fuente: archivo Excel subido · Terminología: Overhaul y tiempo de servicio · Cambios guardados en este navegador.</div>
 </div>
 
 <script>
-const DATA = [{"Componente": "Motor 1", "Modelo": "Motor TV3-117BM", "N° Serie": "7087882300209", "Taller": "JSC BORYSFEN", "Último Overhaul": 45205, "TSO actual (h)": 438.8, "Recurso asignado": 1500, "Recurso restante": 1061.2, "% Disponible": 0.7074666667, "Tiempo de servicio": "10 años", "Vencimiento": 48858, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "06/10/2023", "Vencimiento Fecha": "06/10/2033", "DisponiblePct": 70.7, "ConsumidoPct": 29.3, "Criticidad": "Normal", "Días restantes calendario": 2661}, {"Componente": "Motor 2", "Modelo": "Motor TV3-117BM", "N° Serie": "7087882200437", "Taller": "JSC BORYSFEN", "Último Overhaul": 45205, "TSO actual (h)": 438.8, "Recurso asignado": 1500, "Recurso restante": 1061.2, "% Disponible": 0.7074666667, "Tiempo de servicio": "10 años", "Vencimiento": 48858, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "06/10/2023", "Vencimiento Fecha": "06/10/2033", "DisponiblePct": 70.7, "ConsumidoPct": 29.3, "Criticidad": "Normal", "Días restantes calendario": 2661}, {"Componente": "Reductor Principal", "Modelo": "Reductor VR-14", "N° Serie": "25504360M", "Taller": "CMR S.A.S.", "Último Overhaul": 45163, "TSO actual (h)": 436.99, "Recurso asignado": 1500, "Recurso restante": 1063.01, "% Disponible": 0.7086733333, "Tiempo de servicio": "10 años", "Vencimiento": 48816, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "25/08/2023", "Vencimiento Fecha": "25/08/2033", "DisponiblePct": 70.9, "ConsumidoPct": 29.1, "Criticidad": "Normal", "Días restantes calendario": 2619}, {"Componente": "AI-9B", "Modelo": "Motor de Arranque AI-9B", "N° Serie": "7080924200355", "Taller": "OOO ARP Motor", "Último Overhaul": 44028, "TSO actual (h)": 62.8333, "Recurso asignado": 100, "Recurso restante": -94, "% Disponible": 0, "Tiempo de servicio": "8 años", "Vencimiento": 46950, "Requiere Overhaul": "SI", "Estado": "OVERHAUL REQUERIDO", "Arranques TSO": 694, "Recurso arranques": 600, "Exceso arranques": 94, "Último Overhaul Fecha": "16/07/2020", "Vencimiento Fecha": "16/07/2028", "DisponiblePct": 0, "ConsumidoPct": 100, "Criticidad": "Crítico", "Días restantes calendario": 753}];
+const DEFAULT_DATA = [{"Componente": "Motor 1", "Modelo": "Motor TV3-117BM", "N° Serie": "7087882300209", "Taller": "JSC BORYSFEN", "Último Overhaul": 45205, "TSO actual (h)": 438.8, "Recurso asignado": 1500, "Recurso restante": 1061.2, "% Disponible": 0.7074666667, "Tiempo de servicio": "10 años", "Vencimiento": 48858, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "06/10/2023", "Vencimiento Fecha": "06/10/2033", "DisponiblePct": 70.7, "ConsumidoPct": 29.3, "Criticidad": "Normal", "Días restantes calendario": 2661}, {"Componente": "Motor 2", "Modelo": "Motor TV3-117BM", "N° Serie": "7087882200437", "Taller": "JSC BORYSFEN", "Último Overhaul": 45205, "TSO actual (h)": 438.8, "Recurso asignado": 1500, "Recurso restante": 1061.2, "% Disponible": 0.7074666667, "Tiempo de servicio": "10 años", "Vencimiento": 48858, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "06/10/2023", "Vencimiento Fecha": "06/10/2033", "DisponiblePct": 70.7, "ConsumidoPct": 29.3, "Criticidad": "Normal", "Días restantes calendario": 2661}, {"Componente": "Reductor Principal", "Modelo": "Reductor VR-14", "N° Serie": "25504360M", "Taller": "CMR S.A.S.", "Último Overhaul": 45163, "TSO actual (h)": 436.99, "Recurso asignado": 1500, "Recurso restante": 1063.01, "% Disponible": 0.7086733333, "Tiempo de servicio": "10 años", "Vencimiento": 48816, "Requiere Overhaul": "NO", "Estado": "OPERATIVO", "Arranques TSO": null, "Recurso arranques": null, "Exceso arranques": null, "Último Overhaul Fecha": "25/08/2023", "Vencimiento Fecha": "25/08/2033", "DisponiblePct": 70.9, "ConsumidoPct": 29.1, "Criticidad": "Normal", "Días restantes calendario": 2619}, {"Componente": "AI-9B", "Modelo": "Motor de Arranque AI-9B", "N° Serie": "7080924200355", "Taller": "OOO ARP Motor", "Último Overhaul": 44028, "TSO actual (h)": 62.8333, "Recurso asignado": 100, "Recurso restante": -94, "% Disponible": 0, "Tiempo de servicio": "8 años", "Vencimiento": 46950, "Requiere Overhaul": "SI", "Estado": "OVERHAUL REQUERIDO", "Arranques TSO": 694, "Recurso arranques": 600, "Exceso arranques": 94, "Último Overhaul Fecha": "16/07/2020", "Vencimiento Fecha": "16/07/2028", "DisponiblePct": 0, "ConsumidoPct": 100, "Criticidad": "Crítico", "Días restantes calendario": 753}];
+const STORAGE_KEY = "mi17_pnp503_dashboard_editable_v2";
+let DATA = JSON.parse(localStorage.getItem(STORAGE_KEY) || JSON.stringify(DEFAULT_DATA));
 const principales = new Set(["Motor 1","Motor 2","Reductor Principal"]);
+const EDITABLE_FIELDS = ["Modelo", "N° Serie", "TSO actual (h)", "Recurso restante", "Último Overhaul Fecha", "Vencimiento Fecha", "Taller", "Tiempo de servicio"];
 let mode = "principales";
 
+function toNum(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  if (typeof v === "number") return v;
+  const n = Number(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
 function fmt(n, dec=1) {
   if (n === null || n === undefined || n === "") return "—";
   if (typeof n === "number") return n.toLocaleString("es-PE", {maximumFractionDigits: dec, minimumFractionDigits: dec});
   return n;
 }
+function parseDateDMY(s) {
+  const m = String(s || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+}
+function daysUntil(s) {
+  const d = parseDateDMY(s);
+  if (!d) return 999999;
+  const today = new Date(2026, 5, 24);
+  return Math.ceil((d - today)/(1000*60*60*24));
+}
+function recalc(d) {
+  d["TSO actual (h)"] = toNum(d["TSO actual (h)"]);
+  d["Recurso restante"] = toNum(d["Recurso restante"]);
+  d["Recurso asignado"] = toNum(d["Recurso asignado"] || (d["TSO actual (h)"] + Math.max(0, d["Recurso restante"])));
+  const assigned = d["Recurso asignado"] || (d["TSO actual (h)"] + Math.max(0, d["Recurso restante"]));
+  d.DisponiblePct = assigned > 0 ? Math.max(0, Math.min(100, d["Recurso restante"] / assigned * 100)) : 0;
+  d.ConsumidoPct = Math.max(0, Math.min(100, 100 - d.DisponiblePct));
+  d["% Disponible"] = d.DisponiblePct / 100;
+  d["Días restantes calendario"] = daysUntil(d["Vencimiento Fecha"]);
+  const overByHours = d["Recurso restante"] <= 0;
+  const overByStarts = d["Arranques TSO"] && d["Recurso arranques"] && d["Arranques TSO"] > d["Recurso arranques"];
+  d["Requiere Overhaul"] = overByHours || overByStarts ? "SI" : "NO";
+  d.Criticidad = d["Requiere Overhaul"] === "SI" ? "Crítico" : (d.DisponiblePct <= 30 ? "Precaución" : "Normal");
+  d.Estado = d["Requiere Overhaul"] === "SI" ? "OVERHAUL REQUERIDO" : "OPERATIVO";
+}
+function recalcAll() { DATA.forEach(recalc); }
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }
 function statusClass(d) {
   if (d.Criticidad === "Crítico") return "crit";
   if (d.Criticidad === "Precaución") return "warn";
   return "ok";
 }
 function filtered() {
+  recalcAll();
   let arr = DATA.filter(d => mode === "todos" || principales.has(d.Componente));
   const sort = document.getElementById("sort").value;
-  arr = [...arr].sort((a,b) => {
+  return [...arr].sort((a,b) => {
     if (sort === "recurso") return (a["Recurso restante"] ?? 999999) - (b["Recurso restante"] ?? 999999);
     if (sort === "disponible") return (a.DisponiblePct ?? 0) - (b.DisponiblePct ?? 0);
     if (sort === "vencimiento") return (a["Días restantes calendario"] ?? 999999) - (b["Días restantes calendario"] ?? 999999);
     if (sort === "estado") return String(a.Estado).localeCompare(String(b.Estado));
     return 0;
   });
-  return arr;
+}
+function fieldInput(component, field, value) {
+  const type = ["TSO actual (h)", "Recurso restante"].includes(field) ? "number" : "text";
+  const step = type === "number" ? "0.01" : "";
+  return `<input class="edit-input" type="${type}" step="${step}" value="${String(value ?? "").replaceAll('"','&quot;')}" data-component="${component}" data-field="${field}">`;
 }
 function renderKpis(arr) {
-  const total = arr.length;
+  const total = arr.length || 1;
   const operativos = arr.filter(d => d.Estado === "OPERATIVO").length;
   const overhaul = arr.filter(d => String(d["Requiere Overhaul"]).toUpperCase() === "SI").length;
-  const avgDisp = arr.reduce((s,d)=>s+(d.DisponiblePct||0),0)/Math.max(1,arr.length);
-  const min = [...arr].sort((a,b)=>(a["Recurso restante"]??999999)-(b["Recurso restante"]??999999))[0];
+  const min = [...arr].sort((a,b)=>(a["Recurso restante"]??999999)-(b["Recurso restante"]??999999))[0] || {Componente:"—", "Recurso restante":0};
   const kpis = [
-    ["Componentes", total, "Elementos mostrados"],
+    ["Componentes", arr.length, "Elementos mostrados"],
     ["Operativos", operativos, `${Math.round(operativos/total*100)}% de la selección`],
     ["Requieren Overhaul", overhaul, overhaul ? "Revisar alerta" : "Sin requerimiento"],
     ["Menor recurso", `${fmt(min["Recurso restante"],1)} h`, min.Componente]
@@ -187,31 +260,20 @@ function renderKpis(arr) {
 function renderCards(arr) {
   document.getElementById("cards").innerHTML = arr.map(d => `
     <article class="panel component-card ${statusClass(d)}">
-      <div class="card-title">
-        <h3>${d.Componente}</h3>
-        <span class="pill ${statusClass(d)}">${d.Estado}</span>
-      </div>
+      <div class="card-title"><h3>${d.Componente}</h3><span class="pill ${statusClass(d)}">${d.Estado}</span></div>
       <div class="bar"><i style="width:${Math.max(0, Math.min(100, d.DisponiblePct))}%"></i></div>
       <div class="small">${fmt(d.DisponiblePct,1)}% disponible · ${fmt(d.ConsumidoPct,1)}% consumido</div>
       <div class="meta" style="margin-top:12px">
-        <div><span>Modelo</span>${d.Modelo}</div>
-        <div><span>N° Serie</span>${d["N° Serie"]}</div>
-        <div><span>TSO actual</span>${fmt(d["TSO actual (h)"],2)} h</div>
-        <div><span>Recurso restante</span>${fmt(d["Recurso restante"],2)} h</div>
-        <div><span>Último Overhaul</span>${d["Último Overhaul Fecha"]}</div>
-        <div><span>Vencimiento</span>${d["Vencimiento Fecha"]}</div>
-        <div><span>Taller</span>${d.Taller}</div>
-        <div><span>Tiempo de servicio</span>${d["Tiempo de servicio"]}</div>
+        ${EDITABLE_FIELDS.map(f => `<div class="field"><label>${f === "TSO actual (h)" ? "TSO actual" : f}</label>${fieldInput(d.Componente, f, d[f])}${f === "TSO actual (h)" || f === "Recurso restante" ? '<div class="small">horas</div>' : ''}</div>`).join("")}
       </div>
     </article>`).join("");
 }
 function drawBar(arr) {
   const c = document.getElementById("barChart"), ctx = c.getContext("2d");
   ctx.clearRect(0,0,c.width,c.height);
-  const pad = 55, w = c.width - pad*2, h = c.height - 80;
+  const w = c.width - 110, h = c.height - 80;
   const max = Math.max(...arr.map(d=>Math.max(d["TSO actual (h)"]||0, d["Recurso restante"]||0)), 1500);
-  ctx.font = "14px Segoe UI"; ctx.fillStyle = "#a9bbd2";
-  ctx.fillText("Horas", 18, 24);
+  ctx.font = "14px Segoe UI"; ctx.fillStyle = "#a9bbd2"; ctx.fillText("Horas", 18, 24);
   arr.forEach((d,i)=>{
     const y = 55 + i*(h/arr.length) + 14;
     const label = d.Componente.replace("Reductor Principal","Reductor");
@@ -233,9 +295,7 @@ function drawDonut(arr) {
   ctx.clearRect(0,0,c.width,c.height);
   const avg = arr.reduce((s,d)=>s+(d.DisponiblePct||0),0)/Math.max(1,arr.length);
   const cx=c.width/2, cy=160, r=105;
-  ctx.lineWidth=34;
-  ctx.strokeStyle="rgba(255,255,255,.10)";
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  ctx.lineWidth=34; ctx.strokeStyle="rgba(255,255,255,.10)"; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
   ctx.strokeStyle= avg>30 ? "#22c55e" : (avg>10 ? "#f59e0b" : "#ef4444");
   ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2, -Math.PI/2 + Math.PI*2*(avg/100)); ctx.stroke();
   ctx.fillStyle="#edf5ff"; ctx.font="bold 42px Segoe UI"; ctx.textAlign="center"; ctx.fillText(`${fmt(avg,1)}%`,cx,cy+10);
@@ -243,9 +303,14 @@ function drawDonut(arr) {
   document.getElementById("donutText").textContent = `Promedio calculado sobre ${arr.length} componente(s) visibles.`;
 }
 function renderTable(arr) {
-  const cols = ["Componente","Modelo","N° Serie","Taller","Último Overhaul Fecha","TSO actual (h)","Recurso asignado","Recurso restante","DisponiblePct","Tiempo de servicio","Vencimiento Fecha","Estado"];
+  const cols = ["Componente", ...EDITABLE_FIELDS, "DisponiblePct", "Estado"];
   document.getElementById("dataTable").innerHTML = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>` +
-    arr.map(d=>`<tr>${cols.map(c=>`<td>${c==="DisponiblePct" ? fmt(d[c],1)+"%" : (typeof d[c]==="number" ? fmt(d[c],2) : (d[c] ?? "—"))}</td>`).join("")}</tr>`).join("") + "</tbody>";
+    arr.map(d=>`<tr>${cols.map(c=>{
+      let content;
+      if (EDITABLE_FIELDS.includes(c)) content = fieldInput(d.Componente, c, d[c]);
+      else content = c==="DisponiblePct" ? fmt(d[c],1)+"%" : (typeof d[c]==="number" ? fmt(d[c],2) : (d[c] ?? "—"));
+      return `<td data-label="${c}">${content}</td>`;
+    }).join("")}</tr>`).join("") + "</tbody>";
 }
 function renderAlerts(arr) {
   const alerts = [];
@@ -254,12 +319,24 @@ function renderAlerts(arr) {
     if ((d.DisponiblePct||0) <= 30 && String(d["Requiere Overhaul"]).toUpperCase() !== "SI") alerts.push(`🟡 <b>${d.Componente}</b>: disponibilidad baja (${fmt(d.DisponiblePct,1)}%).`);
     if (d["Arranques TSO"] && d["Recurso arranques"] && d["Arranques TSO"] > d["Recurso arranques"]) alerts.push(`🔴 <b>${d.Componente}</b>: excede arranques (${d["Arranques TSO"]} de ${d["Recurso arranques"]}; exceso ${d["Exceso arranques"]}).`);
   });
-  if (!alerts.length) alerts.push("🟢 Motor 1, Motor 2 y Reductor Principal se muestran operativos, con recurso disponible mayor al 70%.");
+  if (!alerts.length) alerts.push("🟢 Los componentes visibles se muestran operativos y con recurso disponible controlado.");
   document.getElementById("alerts").innerHTML = alerts.map(a=>`<div class="alert" style="margin:8px 0">${a}</div>`).join("");
+}
+function bindInputs() {
+  document.querySelectorAll(".edit-input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const comp = inp.dataset.component;
+      const field = inp.dataset.field;
+      const row = DATA.find(d => d.Componente === comp);
+      if (!row) return;
+      row[field] = inp.type === "number" ? toNum(inp.value) : inp.value;
+      recalc(row); save(); render();
+    });
+  });
 }
 function render() {
   const arr = filtered();
-  renderKpis(arr); renderCards(arr); drawBar(arr); drawDonut(arr); renderTable(arr); renderAlerts(arr);
+  renderKpis(arr); renderCards(arr); drawBar(arr); drawDonut(arr); renderTable(arr); renderAlerts(arr); bindInputs();
 }
 document.querySelectorAll(".filter").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -268,13 +345,19 @@ document.querySelectorAll(".filter").forEach(btn => {
   });
 });
 document.getElementById("sort").addEventListener("change", render);
+document.getElementById("saveData").addEventListener("click", () => { save(); alert("Cambios guardados en este navegador."); });
+document.getElementById("resetData").addEventListener("click", () => {
+  if (confirm("¿Restaurar los datos originales?")) {
+    DATA = JSON.parse(JSON.stringify(DEFAULT_DATA)); save(); render();
+  }
+});
 document.getElementById("exportCsv").addEventListener("click", () => {
   const arr = filtered();
   const cols = Object.keys(arr[0]);
   const csv = [cols.join(","), ...arr.map(r => cols.map(c => `"${String(r[c] ?? "").replaceAll('"','""')}"`).join(","))].join("\n");
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href=url; a.download="componentes_mi17_dashboard.csv"; a.click();
+  const a = document.createElement("a"); a.href=url; a.download="componentes_mi17_dashboard_editable.csv"; a.click();
   URL.revokeObjectURL(url);
 });
 render();
